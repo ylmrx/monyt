@@ -1,0 +1,32 @@
+{
+  "log": {
+    "logfile":        "./nat_monitor.log",
+    "max_log_size":   10,
+    "log_level":      "INFO",
+    "retention":      7
+  },
+
+  "nat_peer": "i-060254f836f88c2a8",
+  "local_peer": "i-0ae65d966c805eb29",
+
+  "aws": {
+    "region": "eu-west-1",
+    "profile": "innovation-client"
+  },
+
+  "routes": {
+    "local_table": "rtb-yyyyy",
+    "remote_table": "rtb-zzzzz"
+  },
+
+  "ping": {
+    "num":      3,
+    "timeout":  1,
+    "nextping": 4
+  },
+
+  "instance_timer": {
+    "timer_stop": 60,
+    "timer_start": 300
+  }
+}
