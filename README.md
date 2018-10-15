@@ -12,7 +12,7 @@ We needed big changes in order to avoid using :
 
 ## Usage
 
-The script rely on requests and boto3. Python 3.6 was used for writing and testing
+The script rely on **requests** and **boto3**. Python 3.6 was used for writing and testing
 
 ```
 pip install -r requirements.txt
