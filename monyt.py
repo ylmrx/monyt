@@ -17,11 +17,9 @@ class PingLoop(object):
         self.param = param
 
     def ping_loop(self):
-        self.logger.info("start the loop")
         while True:
-            self.logger.info("waiting for next ping")
+            self.logger.info("waiting for next ping... %ds", self.param['nextping'])
             time.sleep(self.param['nextping'])
-            self.logger.info("starting the ping")
 
             p = Popen(["ping", "-c", str(self.param['num']), 
                     "-W", str(self.param['timeout']), self.host], 
