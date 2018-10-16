@@ -95,9 +95,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     for i in ec2_session.instances.all():
-        print ( i.id )
         if 'aws-nat' in retrieve_tags(i)['nbs_roles'] and i.id != local_nat.id:
-            print("%s is a good peer candidate", i.id)
+            print("%s is a good peer candidate" % i.id)
             remote_nat = ec2_session.Instance(i.id)
             break
     
@@ -105,6 +104,33 @@ if __name__ == "__main__":
         logger.critical("No peer found (ie. no other instance with aws-nat role), stop here")
         sys.exit(2)
     
+    # finding the route tables pointing to our nat-instances 
+    vpc = ec2_session.Vpc(local_nat.vpc_id)
+
+    routes = {
+        'local': [],
+        'remote': []
+    }
+
+    for rt in vpc.route_tables.all():
+        for attrs in rt.routes_attribute:
+            if not ('DestinationCidrBlock' in attrs.keys() and 
+                    'InstanceId' in attrs.keys()
+                   ):
+                continue
+            if attrs['DestinationCidrBlock'] == '0.0.0.0/0':
+                if attrs['InstanceId'] == local_nat.id:
+                    routes['local'].append(rt)
+                if attrs['InstanceId'] == remote_nat.id:
+                    routes['remote'].append(rt)
+
+    print("Found local route tables:")
+    for l in routes['local']:
+        print ( l.route_table_id )
+    print("Found remote route tables:")
+    for r in routes['remote']:
+        print(r.route_table_id)
+
     remote_nat_ip = remote_nat.private_ip_address
     local_nat_ip = local_nat.private_ip_address
     logger.info("remote nat: %s  --- local nat: %s" % (local_nat_ip, remote_nat_ip))
