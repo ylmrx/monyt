@@ -6,17 +6,9 @@
     "retention":      7
   },
 
-  "nat_peer": "i-060254f836f88c2a8",
-  "local_peer": "i-0ae65d966c805eb29",
-
   "aws": {
     "region": "eu-west-1",
     "profile": "innovation-client"
-  },
-
-  "routes": {
-    "local_table": "rtb-yyyyy",
-    "remote_table": "rtb-zzzzz"
   },
 
   "ping": {
