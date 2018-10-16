@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 import time
 
 import multiprocessing
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import check_output, CalledProcessError, Popen, PIPE, STDOUT
 
 def log_prepare(level, logfile, size, retention):
     """
@@ -27,30 +27,42 @@ def log_prepare(level, logfile, size, retention):
     return logger
 
 class PingLoop(object):
+    """
+    Instantiate a thread to check the peer is up.
+    """
     
-    def __init__(self, host, param, logger):
+    def __init__(self, host, param, logger, routes, ec2, local):
         self.logger = logger
         self.host = host
         self.param = param
+        self.routes = routes
+        self.ec2 = ec2
+        self.local = local
+        self.pause_heartbeat = 0
 
     def ping_loop(self):
         while True:
-            self.logger.info("waiting for next ping... %ds", self.param['nextping'])
-            time.sleep(self.param['nextping'])
+            if self.pause_heartbeat == 0:
+                self.logger.info("waiting for next ping... %ds", self.param['nextping'])
+                time.sleep(self.param['nextping'])
 
-            p = Popen(["ping", "-c", str(self.param['num']), 
-                    "-W", str(self.param['timeout']), self.host], 
-                    stdout=PIPE, stderr=STDOUT)
-            if p.wait() != 0:
-                self.logger.critical("Failed to ping.")
-                out, err = p.communicate()
-                self.logger.info(out)
+                command =["ping", "-c", str(self.param['num']), "-W", str(self.param['timeout']), self.host]
 
-                # call the failover func
-            else:
+                p = Popen(command, stdout=PIPE, stderr=STDOUT)
+                if p != 0:
+                    self.logger.critical("Failed to ping: %s", p.communicate())
+                    self.logger.info("Switching the remote route tables to here")
+                    for route in self.routes:
+                        logger.info("Treating route : %s", route.route_table_id)
+                        r = self.ec2.Route(route.route_table_id, '0.0.0.0/0')
+                        r.replace(InstanceId=self.local.id)
+                    self.pause_heartbeat = 1
+                    continue
                 self.logger.info("Successfull ping : %s, count=%s, timeout=%s" % 
-                             (self.host, self.param['num'], self.param['timeout'])
-                            )
+                            (self.host, self.param['num'], self.param['timeout']))
+            else:
+                self.logger.critical("The remote peer was down! Waiting 10' before I try to reach it again.")
+                time.sleep(600)
 
 def retrieve_tags(instance):
     tags = dict(map(
@@ -84,7 +96,7 @@ if __name__ == "__main__":
 
     # search for my peer
     #local_id = requests.get("http://169.254.169.254/latest/meta-data/instance-id").text # name
-    local_id = "i-0ae65d966c805eb29"
+    local_id = "i-060254f836f88c2a8"
     local_nat = ec2_session.Instance(local_id) # boto obj
     local_tags = retrieve_tags(local_nat)
     remote_nat = "not_defined"
@@ -126,10 +138,10 @@ if __name__ == "__main__":
 
     print("Found local route tables:")
     for l in routes['local']:
-        print ( l.route_table_id )
+        print(" -", l.route_table_id )
     print("Found remote route tables:")
     for r in routes['remote']:
-        print(r.route_table_id)
+        print(" -", r.route_table_id)
 
     remote_nat_ip = remote_nat.private_ip_address
     local_nat_ip = local_nat.private_ip_address
@@ -137,18 +149,16 @@ if __name__ == "__main__":
     print("remote nat: %s  --- local nat: %s" % (local_nat_ip, remote_nat_ip))
     logger.info("Spawning the monitoring thread")
 
-    ping = PingLoop("127.0.0.1", config['ping'], logger)
-
-    try:
-        ping.ping_loop()
-    except:
-        logger.critical("Exception caught")
-    finally:
-        logger.info("Shutting everything down")
-        for procs in multiprocessing.active_children():
-            logger.info("shutting down: %r", procs)
-            procs.terminate()
-            procs.join()
-        logger.info("done.")
-
-    
+    ping = PingLoop("12.12.12.12", config['ping'], logger, routes['remote'], ec2_session, local_nat)
+    ping.ping_loop()
+#    try:
+#        ping.ping_loop()
+#    except:
+#        logger.critical("Exception caught")
+#    finally:
+#        logger.info("Shutting everything down")
+#        for procs in multiprocessing.active_children():
+#            logger.info("shutting down: %r", procs)
+#            procs.terminate()
+#            procs.join()
+#        logger.info("done.")
