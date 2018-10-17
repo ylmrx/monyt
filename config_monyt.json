@@ -5,12 +5,7 @@
     "log_level":      "INFO",
     "retention":      7
   },
-
-  "aws": {
-    "region": "eu-west-1",
-    "profile": "innovation-client"
-  },
-
+  "profile": "default",
   "ping": {
     "num":      3,
     "timeout":  1,

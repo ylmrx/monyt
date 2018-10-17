@@ -48,8 +48,6 @@ class PingLoop(object):
                     continue
                 self.logger.critical("The remote peer was down! Waiting 1' before I try to reach it again.")
                 time.sleep(60)
-                
-
 
 def switch_routes(routes, instance, logger, ec2):
     if len(routes) > 0:
@@ -132,16 +130,18 @@ if __name__ == "__main__":
     )
     logger.info("Creating the ec2 session...")
 
+    # search for my peer
+    local_id = requests.get("http://169.254.169.254/latest/meta-data/instance-id").text # name
+    local_zone = requests.get("http://169.254.169.254/latest/meta-data/placement/availability-zone").text
+    region = json.loads(requests.get("http://169.254.169.254/latest/dynamic/instance-identity/document").text)['region']
+    
     sess = boto3.session.Session(
-        region_name=config['aws']['region'],
-        profile_name=config['aws']['profile']
+        region_name=region,
+        profile_name=config['profile']
     )
 
     ec2_session = sess.resource('ec2')
 
-    # search for my peer
-    local_id = requests.get("http://169.254.169.254/latest/meta-data/instance-id").text # name
-    local_zone = requests.get("http://169.254.169.254/latest/meta-data/placement/availability-zone").text
     #local_id = "i-0ae65d966c805eb29"
     #local_zone = "eu-west-1b"
     local_nat = ec2_session.Instance(local_id) # boto obj
