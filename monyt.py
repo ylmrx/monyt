@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# based on shell script aws-api dependant : https://aws.amazon.com/articles/high-availability-for-amazon-vpc-nat-instances-an-example/
+#
 import boto3
 import requests
 import json
