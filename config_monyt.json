@@ -6,6 +6,8 @@
     "retention":      7
   },
   "profile": "default",
+  "tag": "Name",
+  "pattern": "-nat-",
   "ping": {
     "num":      3,
     "timeout":  1,

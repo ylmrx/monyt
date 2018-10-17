@@ -142,8 +142,6 @@ if __name__ == "__main__":
 
     ec2_session = sess.resource('ec2')
 
-    #local_id = "i-0ae65d966c805eb29"
-    #local_zone = "eu-west-1b"
     local_nat = ec2_session.Instance(local_id) # boto obj
     local_tags = retrieve_tags(local_nat)
     
@@ -155,7 +153,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     for i in ec2_session.instances.all():
-        if 'aws-nat' in retrieve_tags(i)['nbs_roles'] and i.id != local_nat.id:
+        if config['pattern'] in retrieve_tags(i)[config['tag']] and i.id != local_nat.id:
             print("%s is a good peer candidate" % i.id)
             remote_nat = ec2_session.Instance(i.id)
             break
@@ -181,7 +179,6 @@ if __name__ == "__main__":
 
     logger.info("Spawning the monitoring thread")
 
-    #ping = PingLoop("12.12.12.12", config['ping'], logger, routes['remote'], ec2_session, local_nat)
     ping = PingLoop(remote_nat_ip, config['ping'], logger, routes['remote'], ec2_session, local_nat)
     try:
         ping.ping_loop()
