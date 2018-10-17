@@ -150,7 +150,7 @@ if __name__ == "__main__":
     
     remote_nat = "not_defined"
 
-    if 'aws-nat' not in local_tags['nbs_roles']:
+    if config['pattern'] not in local_tags[config['tag']]:
         logger.critical("The local instance doesn't carry the aws-nat roles, stop here")
         print("The nat should have a aws-nat roles. Fix your tags/deploy")
         sys.exit(1)
@@ -165,10 +165,7 @@ if __name__ == "__main__":
         logger.critical("No peer found (ie. no other instance with aws-nat role), stop here")
         sys.exit(2)
     
-    # finding the route tables pointing to our nat-instances 
     vpc = ec2_session.Vpc(local_nat.vpc_id)
-
-
     routes = update_route_dict(vpc)
 
     remote_nat_ip = remote_nat.private_ip_address
